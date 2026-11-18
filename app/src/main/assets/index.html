@@ -1,0 +1,1963 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>APK Studio Pro | محول ملفات HTML إلى تطبيق أندرويد APK</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Cairo', 'Inter', sans-serif;
+      background-color: #0b1120;
+      color: #f1f5f9;
+      overflow-x: hidden;
+    }
+    .code-font {
+      font-family: 'Inter', monospace;
+      direction: ltr;
+      text-align: left;
+    }
+    .phone-frame {
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 0 0 2px #334155;
+      transition: all 0.3s ease;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+
+  <!-- Toast Notification -->
+  <div id="toastContainer" class="fixed bottom-5 left-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Top Header -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center shadow-lg shadow-emerald-900/40">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg md:text-xl font-extrabold text-white tracking-tight">APK Studio Pro</h1>
+            <span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">الإصدار 3.0</span>
+          </div>
+          <p class="text-xs text-slate-400">منصة تحويل ملفات HTML5 إلى تطبيق أندرويد أصلي (APK) وحزم بناء سحابية</p>
+        </div>
+      </div>
+
+      <!-- Status & Actions -->
+      <div class="flex flex-wrap items-center gap-2">
+        <div id="fileStatusBadge" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/90 border border-slate-700 text-xs">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="headerFileName" class="font-semibold text-slate-200">index.html</span>
+          <span id="headerFileSize" class="text-slate-400">(جاهز)</span>
+        </div>
+
+        <button id="btnSaveSettings" type="button" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-200 transition flex items-center gap-1.5">
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+          <span>حفظ الإعدادات</span>
+        </button>
+
+        <button id="btnQuickExportTrigger" type="button" class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-950/50 transition flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span>بناء وتصدير APK</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="max-w-7xl mx-auto px-4 flex items-center gap-1 overflow-x-auto custom-scroll border-t border-slate-800/80 pt-1">
+      <button type="button" data-tab="tab-html" class="nav-tab-btn px-4 py-2.5 text-xs md:text-sm font-bold border-b-2 border-emerald-400 text-emerald-400 whitespace-nowrap flex items-center gap-2 transition">
+        <span>1. ملف HTML والمحاكي</span>
+      </button>
+      <button type="button" data-tab="tab-config" class="nav-tab-btn px-4 py-2.5 text-xs md:text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 whitespace-nowrap flex items-center gap-2 transition">
+        <span>2. إعدادات APK والصلاحيات</span>
+      </button>
+      <button type="button" data-tab="tab-icon" class="nav-tab-btn px-4 py-2.5 text-xs md:text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 whitespace-nowrap flex items-center gap-2 transition">
+        <span>3. تصميم الأيقونة والهوية</span>
+      </button>
+      <button type="button" data-tab="tab-build" class="nav-tab-btn px-4 py-2.5 text-xs md:text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 whitespace-nowrap flex items-center gap-2 transition">
+        <span>4. التصدير وبناء APK</span>
+      </button>
+      <button type="button" data-tab="tab-cloud" class="nav-tab-btn px-4 py-2.5 text-xs md:text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 whitespace-nowrap flex items-center gap-2 transition">
+        <span>5. الربط السحابي وحل الأخطاء</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
+
+    <!-- TAB 1: HTML SOURCE & SIMULATOR -->
+    <section id="tab-html" class="tab-panel grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <!-- Left Column: File Upload & Code Editor -->
+      <div class="lg:col-span-7 flex flex-col gap-5">
+        <!-- Upload Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div>
+              <h2 class="text-base font-bold text-white flex items-center gap-2">
+                <span class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-extrabold">1</span>
+                <span>ارفع ملف HTML أو الصق الكود البرمجي</span>
+              </h2>
+              <p class="text-xs text-slate-400 mt-0.5">يدعم التطبيقات ذات الملف الواحد (HTML + CSS + JS) مع LocalStorage والخطوط العربية</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <label for="htmlFileInput" class="cursor-pointer px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shadow">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                <span>اختيار ملف .html</span>
+              </label>
+              <input id="htmlFileInput" type="file" accept=".html,.htm" class="hidden" />
+            </div>
+          </div>
+
+          <!-- Drag & Drop Zone -->
+          <div id="dropZone" class="border-2 border-dashed border-slate-700 hover:border-emerald-500/60 rounded-2xl p-5 text-center transition bg-slate-950/50">
+            <p class="text-sm font-semibold text-slate-300">اسحب وأفلت ملف <span class="text-emerald-400 font-bold">index.html</span> هنا أو استخدم الأزرار بالأسفل</p>
+            <p class="text-xs text-slate-400 mt-1">يمكنك أيضاً تجربة أحد القوالب الجاهزة لاختبار التحويل الفوري:</p>
+            <div class="flex flex-wrap items-center justify-center gap-2 mt-3">
+              <button type="button" data-template="grocery" class="template-btn px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-emerald-300 border border-slate-700 transition">
+                قالب تطبيق مسواكي والمشتريات
+              </button>
+              <button type="button" data-template="shifts" class="template-btn px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-sky-300 border border-slate-700 transition">
+                قالب جدول الخفارات والمناوبات
+              </button>
+              <button type="button" data-template="lab" class="template-btn px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-purple-300 border border-slate-700 transition">
+                قالب حاسبة التحليلات المختبرية
+              </button>
+            </div>
+          </div>
+
+          <!-- Smart Code Inspection Badges -->
+          <div class="mt-4 pt-4 border-t border-slate-800">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-slate-300">تحليل خصائص ملف HTML المرفوع:</span>
+              <span id="codeCharCount" class="text-xs text-slate-400">0 حرف</span>
+            </div>
+            <div id="analysisBadges" class="flex flex-wrap gap-2"></div>
+          </div>
+        </div>
+
+        <!-- Built-in Code Editor -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div class="flex items-center gap-2">
+              <h3 class="text-sm font-bold text-white">محرر كود HTML المباشر</h3>
+              <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 code-font">assets/index.html</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btnInjectBridge" type="button" class="px-3 py-1.5 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 text-teal-300 border border-teal-500/30 text-xs font-semibold transition">
+                + حقن كود توافق WebView والواتساب
+              </button>
+              <button id="btnRunPreview" type="button" class="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition">
+                تحديث المحاكي
+              </button>
+            </div>
+          </div>
+          <textarea id="htmlCodeEditor" rows="14" class="w-full rounded-xl bg-slate-950 border border-slate-800 p-3.5 text-xs text-emerald-300 code-font focus:outline-none focus:border-emerald-500 custom-scroll" spellcheck="false"></textarea>
+        </div>
+      </div>
+
+      <!-- Right Column: Interactive Android Simulator -->
+      <div class="lg:col-span-5 flex flex-col items-center">
+        <div class="w-full bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col items-center">
+          <div class="w-full flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div>
+              <h3 class="text-sm font-bold text-white">محاكي WebView للأندرويد</h3>
+              <p class="text-xs text-slate-400">معاينة حية لكيفية ظهور التطبيق داخل الهاتف</p>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button id="btnRotatePhone" type="button" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700 transition">
+                تدوير الشاشة
+              </button>
+              <button id="btnReloadIframe" type="button" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700 transition">
+                إعادة تشغيل
+              </button>
+            </div>
+          </div>
+
+          <!-- Phone Frame -->
+          <div id="phoneFrameContainer" class="phone-frame w-full max-w-[350px] h-[640px] rounded-[36px] bg-slate-950 p-3 flex flex-col border-4 border-slate-800 relative">
+            <!-- Android Status Bar -->
+            <div id="simStatusBar" class="h-7 px-4 rounded-t-[24px] bg-emerald-700 text-white flex items-center justify-between text-[11px] font-semibold select-none">
+              <span id="simClock">12:30</span>
+              <div class="flex items-center gap-2">
+                <span id="simAppNameTop" class="truncate max-w-[140px]">مسواكي الذكي</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <span>5G</span>
+                <span>100%</span>
+              </div>
+            </div>
+
+            <!-- WebView Iframe -->
+            <div class="flex-1 bg-white overflow-hidden relative">
+              <iframe id="previewIframe" title="Android WebView Simulator" class="w-full h-full border-0" sandbox="allow-scripts allow-forms allow-modals"></iframe>
+            </div>
+
+            <!-- Android Bottom Navigation Bar -->
+            <div class="h-9 bg-slate-950 rounded-b-[24px] flex items-center justify-around px-8 text-slate-400 select-none border-t border-slate-800">
+              <button id="simBackBtn" type="button" title="رجوع" class="hover:text-white transition p-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <button id="simHomeBtn" type="button" title="الرئيسية" class="hover:text-white transition p-1">
+                <span class="block w-3.5 h-3.5 rounded-full border-2 border-current"></span>
+              </button>
+              <button id="simRecentsBtn" type="button" title="التطبيقات المصغرة" class="hover:text-white transition p-1">
+                <span class="block w-3.5 h-3.5 rounded-sm border-2 border-current"></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="w-full mt-4 flex items-center justify-between text-xs text-slate-400 bg-slate-950/70 px-3.5 py-2.5 rounded-xl border border-slate-800">
+            <span>حزمة التطبيق: <strong id="simPkgLabel" class="code-font text-emerald-400">com.alsahlany.miswaki</strong></span>
+            <button id="btnGoToConfig" type="button" class="text-emerald-400 hover:underline font-bold">تعديل الإعدادات &larr;</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: ANDROID APP CONFIG & PERMISSIONS -->
+    <section id="tab-config" class="tab-panel hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- App Identity & Versioning -->
+        <div class="lg:col-span-6 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+          <h2 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+            <span class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-extrabold">2</span>
+            <span>الهوية الأساسية لتطبيق الأندرويد</span>
+          </h2>
+
+          <div>
+            <label for="cfgAppName" class="block text-xs font-bold text-slate-300 mb-1.5">اسم التطبيق (يظهر تحت الأيقونة في الهاتف)</label>
+            <input id="cfgAppName" type="text" value="مسواكي الذكي" class="w-full rounded-xl bg-slate-950 border border-slate-800 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500" />
+          </div>
+
+          <div>
+            <label for="cfgPackageName" class="block text-xs font-bold text-slate-300 mb-1.5">معرف الحزمة الفريد (Package Name / Application ID)</label>
+            <input id="cfgPackageName" type="text" value="com.alsahlany.miswaki" class="w-full rounded-xl bg-slate-950 border border-slate-800 px-3.5 py-2.5 text-sm text-emerald-300 code-font focus:outline-none focus:border-emerald-500" />
+            <p id="pkgValidationMsg" class="text-[11px] text-emerald-400 mt-1">صيغة معرف الحزمة صحيحة ومطابقة لمعايير أندرويد.</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="cfgVersionName" class="block text-xs font-bold text-slate-300 mb-1.5">رقم الإصدار (Version Name)</label>
+              <input id="cfgVersionName" type="text" value="1.0.0" class="w-full rounded-xl bg-slate-950 border border-slate-800 px-3.5 py-2 text-sm text-white code-font focus:outline-none focus:border-emerald-500" />
+            </div>
+            <div>
+              <label for="cfgVersionCode" class="block text-xs font-bold text-slate-300 mb-1.5">كود البناء (Version Code)</label>
+              <input id="cfgVersionCode" type="number" min="1" value="1" class="w-full rounded-xl bg-slate-950 border border-slate-800 px-3.5 py-2 text-sm text-white code-font focus:outline-none focus:border-emerald-500" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="cfgOrientation" class="block text-xs font-bold text-slate-300 mb-1.5">اتجاه الشاشة الافتراضي</label>
+              <select id="cfgOrientation" class="w-full rounded-xl bg-slate-950 border border-slate-800 px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500">
+                <option value="portrait">عمودي (Portrait)</option>
+                <option value="landscape">أفقي (Landscape)</option>
+                <option value="unspecified">تلقائي حسب تدوير الهاتف (Sensor)</option>
+              </select>
+            </div>
+            <div>
+              <label for="cfgStatusBarColor" class="block text-xs font-bold text-slate-300 mb-1.5">لون شريط الحالة العلوي</label>
+              <div class="flex items-center gap-2">
+                <input id="cfgStatusBarColor" type="color" value="#047857" class="w-11 h-10 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer p-1" />
+                <input id="cfgStatusBarHex" type="text" value="#047857" class="flex-1 rounded-xl bg-slate-950 border border-slate-800 px-3 py-2 text-xs text-white code-font" />
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 pt-2">
+            <div>
+              <label for="cfgMinSdk" class="block text-xs font-bold text-slate-300 mb-1.5">الحد الأدنى للأندرويد (Min SDK)</label>
+              <select id="cfgMinSdk" class="w-full rounded-xl bg-slate-950 border border-slate-800 px-3 py-2 text-xs text-white">
+                <option value="21">Android 5.0 (API 21)</option>
+                <option value="24" selected>Android 7.0 (API 24 - موصى به)</option>
+                <option value="26">Android 8.0 (API 26)</option>
+              </select>
+            </div>
+            <div>
+              <label for="cfgTargetSdk" class="block text-xs font-bold text-slate-300 mb-1.5">الإصدار المستهدف (Target SDK)</label>
+              <select id="cfgTargetSdk" class="w-full rounded-xl bg-slate-950 border border-slate-800 px-3 py-2 text-xs text-white">
+                <option value="33">Android 13 (API 33)</option>
+                <option value="34" selected>Android 14 (API 34 - قياسي)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- WebView Features & Android Permissions -->
+        <div class="lg:col-span-6 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+          <h2 class="text-base font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+            <span class="w-6 h-6 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center text-xs font-extrabold">⚙</span>
+            <span>خصائص محرك WebView وصلاحيات النظام</span>
+          </h2>
+
+          <div class="space-y-3">
+            <label class="flex items-start justify-between gap-3 p-3 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer hover:border-slate-700">
+              <div>
+                <div class="text-xs font-bold text-white">تفعيل التخزين المحلي الدائم (DOM Storage & LocalStorage)</div>
+                <div class="text-[11px] text-slate-400">ضروري لحفظ بيانات المستخدمين والسجلات داخل الهاتف دون ضياع عند إغلاق التطبيق</div>
+              </div>
+              <input id="permDomStorage" type="checkbox" checked class="w-4 h-4 accent-emerald-500 mt-1" />
+            </label>
+
+            <label class="flex items-start justify-between gap-3 p-3 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer hover:border-slate-700">
+              <div>
+                <div class="text-xs font-bold text-white">دعم فتح روابط واتساب والاتصال الخارجي تلقائياً</div>
+                <div class="text-[11px] text-slate-400">يعالج روابط <span class="code-font text-emerald-400">wa.me</span> و <span class="code-font text-emerald-400">whatsapp://</span> و <span class="code-font text-emerald-400">tel:</span> ويفتح تطبيق واتساب مباشرة</div>
+              </div>
+              <input id="permWhatsappIntents" type="checkbox" checked class="w-4 h-4 accent-emerald-500 mt-1" />
+            </label>
+
+            <label class="flex items-start justify-between gap-3 p-3 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer hover:border-slate-700">
+              <div>
+                <div class="text-xs font-bold text-white">دعم الطباعة وتصدير تقارير A4 PDF (Android PrintManager)</div>
+                <div class="text-[11px] text-slate-400">يربط أمر <span class="code-font text-emerald-400">window.print()</span> مع نظام الطباعة وحفظ PDF الرسمي في أندرويد</div>
+              </div>
+              <input id="permPrintPdf" type="checkbox" checked class="w-4 h-4 accent-emerald-500 mt-1" />
+            </label>
+
+            <label class="flex items-start justify-between gap-3 p-3 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer hover:border-slate-700">
+              <div>
+                <div class="text-xs font-bold text-white">السماح برفع واستيراد الملفات والنسخ الاحتياطي (File Chooser)</div>
+                <div class="text-[11px] text-slate-400">يمكّن أزرار <span class="code-font text-emerald-400">&lt;input type="file"&gt;</span> من فتح مدير ملفات الهاتف والصور</div>
+              </div>
+              <input id="permFileUpload" type="checkbox" checked class="w-4 h-4 accent-emerald-500 mt-1" />
+            </label>
+
+            <label class="flex items-start justify-between gap-3 p-3 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer hover:border-slate-700">
+              <div>
+                <div class="text-xs font-bold text-white">صلاحية الإنترنت والمزامنة السحابية (INTERNET Permission)</div>
+                <div class="text-[11px] text-slate-400">مطلوبة لتحميل خطوط Google ومكتبات Tailwind والاتصال بـ APIs الخارجية</div>
+              </div>
+              <input id="permInternet" type="checkbox" checked class="w-4 h-4 accent-emerald-500 mt-1" />
+            </label>
+
+            <label class="flex items-start justify-between gap-3 p-3 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer hover:border-slate-700">
+              <div>
+                <div class="text-xs font-bold text-white">وضع ملء الشاشة الكامل (Fullscreen Immersive Mode)</div>
+                <div class="text-[11px] text-slate-400">إخفاء شريط العنوان العلوي ليبدو التطبيق كتطبيق أندرويد أصلي 100%</div>
+              </div>
+              <input id="permFullscreen" type="checkbox" checked class="w-4 h-4 accent-emerald-500 mt-1" />
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: ICON & SPLASH STUDIO -->
+    <section id="tab-icon" class="tab-panel hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Left: Icon Designer Controls -->
+        <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+            <div>
+              <h2 class="text-base font-bold text-white">استوديو تصميم أيقونة التطبيق (Launcher Icon)</h2>
+              <p class="text-xs text-slate-400">صمّم أيقونة احترافية أو ارفع صورة من جهازك ليتم تضمينها تلقائياً في ملف الـ APK</p>
+            </div>
+            <label for="iconFileUpload" class="cursor-pointer px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-emerald-400 transition">
+              رفع صورة أيقونة خارجية
+            </label>
+            <input id="iconFileUpload" type="file" accept="image/*" class="hidden" />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="iconText" class="block text-xs font-bold text-slate-300 mb-1.5">النص أو الحرف المختصر داخل الأيقونة</label>
+              <input id="iconText" type="text" maxlength="6" value="مسواك" class="w-full rounded-xl bg-slate-950 border border-slate-800 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500" />
+            </div>
+            <div>
+              <label for="iconSymbol" class="block text-xs font-bold text-slate-300 mb-1.5">الرمز التعبيري أو الشكل المركزي</label>
+              <select id="iconSymbol" class="w-full rounded-xl bg-slate-950 border border-slate-800 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+                <option value="cart">🛒 سلة مشتريات (مسواكي)</option>
+                <option value="calendar">📅 جدول خفارات ومناوبات</option>
+                <option value="lab">🔬 مختبر وتحليلات طبية</option>
+                <option value="vault">🔐 خزنة وحفظ حسابات</option>
+                <option value="code">⚡ تطبيق ذكي عام</option>
+                <option value="none">بدون رمز (نص فقط)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <label for="iconBgColor1" class="block text-xs font-bold text-slate-300 mb-1.5">لون الخلفية الأول</label>
+              <input id="iconBgColor1" type="color" value="#059669" class="w-full h-10 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer p-1" />
+            </div>
+            <div>
+              <label for="iconBgColor2" class="block text-xs font-bold text-slate-300 mb-1.5">لون التدرج الثاني</label>
+              <input id="iconBgColor2" type="color" value="#0f766e" class="w-full h-10 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer p-1" />
+            </div>
+            <div>
+              <label for="iconTextColor" class="block text-xs font-bold text-slate-300 mb-1.5">لون النص والرمز</label>
+              <input id="iconTextColor" type="color" value="#ffffff" class="w-full h-10 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer p-1" />
+            </div>
+          </div>
+
+          <div>
+            <label for="iconCornerRadius" class="block text-xs font-bold text-slate-300 mb-1.5">استدارة الحواف (Adaptive Squircle): <span id="radiusValueLabel">110</span>px</label>
+            <input id="iconCornerRadius" type="range" min="20" max="256" value="110" class="w-full accent-emerald-500" />
+          </div>
+
+          <div class="flex flex-wrap gap-2 pt-2">
+            <button id="btnResetGeneratedIcon" type="button" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700 transition">
+              إعادة توليد الأيقونة الافتراضية
+            </button>
+            <button id="btnDownloadIconPng" type="button" class="px-4 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition">
+              تحميل الأيقونة بصيغة PNG (512×512)
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Live Canvas Icon Preview -->
+        <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col items-center justify-center text-center">
+          <h3 class="text-sm font-bold text-white mb-1">معاينة أيقونة الأندرويد عالية الدقة</h3>
+          <p class="text-xs text-slate-400 mb-5">يتم توليد جميع مقاسات <span class="code-font">mipmap-xxxhdpi</span> تلقائياً داخل الحزمة</p>
+
+          <canvas id="iconCanvas" width="512" height="512" class="w-48 h-48 rounded-3xl shadow-2xl border border-slate-700 bg-slate-950"></canvas>
+
+          <div class="mt-6 grid grid-cols-3 gap-4 w-full max-w-xs text-center">
+            <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+              <div class="text-[11px] font-bold text-emerald-400 code-font">xxxhdpi</div>
+              <div class="text-[10px] text-slate-400">192×192 px</div>
+            </div>
+            <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+              <div class="text-[11px] font-bold text-emerald-400 code-font">xxhdpi</div>
+              <div class="text-[10px] text-slate-400">144×144 px</div>
+            </div>
+            <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+              <div class="text-[11px] font-bold text-emerald-400 code-font">Play Store</div>
+              <div class="text-[10px] text-slate-400">512×512 px</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: BUILD & EXPORT APK -->
+    <section id="tab-build" class="tab-panel hidden space-y-6">
+      <!-- Top Summary Banner -->
+      <div class="bg-gradient-to-l from-emerald-950/70 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-2xl p-6 shadow-xl flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">جاهز للتوليد الفوري</span>
+          <h2 class="text-lg md:text-xl font-extrabold text-white mt-2">مركز تصدير وبناء تطبيق الأندرويد (APK Builder)</h2>
+          <p class="text-xs md:text-sm text-slate-300 mt-1">اختر طريقة التصدير الأنسب لك: بناء سحابي تلقائي بملف واحد بدون أخطاء، أو مشروع أندرويد كامل، أو تطبيق ويب تقدمي قابل للتثبيت الفوري.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <button id="btnDownloadFullAndroidZip" type="button" class="px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold text-xs md:text-sm shadow-lg shadow-emerald-950/60 transition flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            <span>تحميل مشروع Android Studio + GitHub Actions الكامل (.ZIP)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 3 Export Cards -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Option 1: Single-File Self-Generating GitHub Action -->
+        <div class="bg-slate-900 border-2 border-emerald-500/40 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 text-xs font-bold">الطريقة الأسهل والأضمن 100%</span>
+              <span class="text-xs text-slate-400 code-font">GitHub Cloud APK</span>
+            </div>
+            <h3 class="text-base font-bold text-white">1. البناء السحابي بملفين فقط (بدون gradlew أو Capacitor)</h3>
+            <p class="text-xs text-slate-300 mt-2 leading-relaxed">
+              تجنّب نهائياً أخطاء <span class="code-font text-rose-400">gradlew not found</span> أو <span class="code-font text-rose-400">Java 21</span>! هذا الـ Workflow الذكي يأخذ ملف <span class="code-font text-emerald-300">index.html</span> فقط، ويقوم داخل سيرفر GitHub بإنشاء مشروع الأندرويد الأصلي وبناء ملف <span class="code-font text-emerald-300">app-debug.apk</span> جاهز للتحميل في دقيقتين.
+            </p>
+            <ul class="mt-3 space-y-1.5 text-xs text-slate-400">
+              <li>✅ لا يحتاج لرفع مجلدات معقدة (فقط <span class="code-font text-slate-200">index.html</span> + <span class="code-font text-slate-200">main.yml</span>)</li>
+              <li>✅ يدعم العربي، LocalStorage، الواتساب، والطباعة</li>
+              <li>✅ يولّد الأيقونة تلقائياً ويخرج ملف APK مباشر</li>
+            </ul>
+          </div>
+
+          <div class="mt-5 pt-4 border-t border-slate-800 space-y-2">
+            <button id="btnDownloadSmartWorkflow" type="button" class="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition flex items-center justify-center gap-2">
+              <span>تحميل ملف .github/workflows/main.yml</span>
+            </button>
+            <button id="btnCopySmartWorkflow" type="button" class="w-full py-2 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition">
+              نسخ كود Workflow للحافظة
+            </button>
+          </div>
+        </div>
+
+        <!-- Option 2: Complete Native Android Project ZIP -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-300 text-xs font-bold">حزمة متكاملة</span>
+              <span class="text-xs text-slate-400 code-font">Native WebView ZIP</span>
+            </div>
+            <h3 class="text-base font-bold text-white">2. حزمة مشروع أندرويد الكاملة (.ZIP)</h3>
+            <p class="text-xs text-slate-300 mt-2 leading-relaxed">
+              تحتوي على مشروع أندرويد جاهز بالكامل مع ملف <span class="code-font text-sky-300">index.html</span> الخاص بك، وكود <span class="code-font text-sky-300">MainActivity.java</span>، وملف <span class="code-font text-sky-300">AndroidManifest.xml</span>، والأيقونة المولّدة، وملف البناء التلقائي.
+            </p>
+            <ul class="mt-3 space-y-1.5 text-xs text-slate-400">
+              <li>📦 <span class="code-font text-slate-200">app/src/main/assets/index.html</span></li>
+              <li>📦 <span class="code-font text-slate-200">MainActivity.java</span> + <span class="code-font text-slate-200">AndroidManifest.xml</span></li>
+              <li>📦 أيقونات <span class="code-font text-slate-200">ic_launcher.png</span> + <span class="code-font text-slate-200">build.gradle</span></li>
+            </ul>
+          </div>
+
+          <div class="mt-5 pt-4 border-t border-slate-800 space-y-2">
+            <button id="btnDownloadAndroidZipCard" type="button" class="w-full py-2.5 px-4 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition">
+              تحميل حزمة مشروع الأندرويد (.ZIP)
+            </button>
+            <button id="btnDownloadEnhancedHtml" type="button" class="w-full py-2 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition">
+              تحميل ملف index.html المحسّن للأندرويد فقط
+            </button>
+          </div>
+        </div>
+
+        <!-- Option 3: Instant Installable PWA WebAPK -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-300 text-xs font-bold">تثبيت فوري بدون انتظار</span>
+              <span class="text-xs text-slate-400 code-font">PWA / WebAPK</span>
+            </div>
+            <h3 class="text-base font-bold text-white">3. حزمة تطبيق ويب تقدمي يعمل بدون إنترنت (PWA)</h3>
+            <p class="text-xs text-slate-300 mt-2 leading-relaxed">
+              توليد حزمة تضم <span class="code-font text-purple-300">manifest.json</span> ومحرك التخزين المؤقت <span class="code-font text-purple-300">sw.js</span> والأيقونات، لتثبيت التطبيق فوراً على شاشة الهاتف الرئيسية عبر متصفح Chrome بدون الحاجة لتصريح مصادر غير معروفة.
+            </p>
+            <ul class="mt-3 space-y-1.5 text-xs text-slate-400">
+              <li>⚡ يعمل 100% بدون إنترنت بعد الفتح الأول</li>
+              <li>⚡ يظهر بأيقونة مستقلة وبملء الشاشة على الهاتف</li>
+              <li>⚡ جاهز للرفع المجاني على GitHub Pages أو Netlify</li>
+            </ul>
+          </div>
+
+          <div class="mt-5 pt-4 border-t border-slate-800 space-y-2">
+            <button id="btnDownloadPwaZip" type="button" class="w-full py-2.5 px-4 rounded-xl bg-purple-500 hover:bg-purple-400 text-slate-950 font-bold text-xs transition">
+              تحميل حزمة PWA الكاملة (.ZIP)
+            </button>
+            <button id="btnPreviewGeneratedCode" type="button" class="w-full py-2 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition">
+              معاينة الأكواد المولّدة بالأسفل
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Generated Code Viewer -->
+      <div id="generatedCodeSection" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <div class="flex items-center gap-2">
+            <h3 class="text-sm font-bold text-white">معاينة ملفات مشروع الأندرويد المولّدة تلقائياً</h3>
+            <span class="text-xs text-slate-400">(تتحدث فورياً حسب إعداداتك)</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button type="button" data-preview-file="workflow" class="code-preview-tab px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs transition">
+              .github/workflows/main.yml
+            </button>
+            <button type="button" data-preview-file="manifest" class="code-preview-tab px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 font-semibold text-xs hover:bg-slate-700 transition">
+              AndroidManifest.xml
+            </button>
+            <button type="button" data-preview-file="java" class="code-preview-tab px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 font-semibold text-xs hover:bg-slate-700 transition">
+              MainActivity.java
+            </button>
+            <button type="button" data-preview-file="gradle" class="code-preview-tab px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 font-semibold text-xs hover:bg-slate-700 transition">
+              app/build.gradle
+            </button>
+            <button id="btnCopyCurrentPreview" type="button" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 text-xs font-bold transition">
+              نسخ هذا الملف
+            </button>
+          </div>
+        </div>
+        <pre id="generatedCodeViewer" class="w-full max-h-96 overflow-auto rounded-xl bg-slate-950 border border-slate-800 p-4 text-xs text-emerald-300 code-font custom-scroll"></pre>
+      </div>
+    </section>
+
+    <!-- TAB 5: CLOUD GITHUB PUSH & TROUBLESHOOTER -->
+    <section id="tab-cloud" class="tab-panel hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Left: Direct GitHub API Uploader -->
+      <div class="lg:col-span-6 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <div class="border-b border-slate-800 pb-3">
+          <span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">ربط سحابي مباشر</span>
+          <h2 class="text-base font-bold text-white mt-2">رفع الملفات وبناء APK تلقائياً عبر GitHub API</h2>
+          <p class="text-xs text-slate-400 mt-0.5">أرسل ملف <span class="code-font text-slate-200">index.html</span> وملف البناء <span class="code-font text-slate-200">main.yml</span> مباشرة إلى مستودعك في GitHub بضغطة زر واحدة ليبدأ بناء الـ APK فوراً.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="ghOwner" class="block text-xs font-bold text-slate-300 mb-1">اسم المستخدم في GitHub (Owner)</label>
+            <input id="ghOwner" type="text" placeholder="مثال: alsahlany" class="w-full rounded-xl bg-slate-950 border border-slate-800 px-3.5 py-2 text-xs text-white code-font focus:outline-none focus:border-emerald-500" />
+          </div>
+          <div>
+            <label for="ghRepo" class="block text-xs font-bold text-slate-300 mb-1">اسم المستودع (Repository Name)</label>
+            <input id="ghRepo" type="text" placeholder="مثال: my-html-app" class="w-full rounded-xl bg-slate-950 border border-slate-800 px-3.5 py-2 text-xs text-white code-font focus:outline-none focus:border-emerald-500" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="sm:col-span-2">
+            <label for="ghToken" class="block text-xs font-bold text-slate-300 mb-1">رمز الوصول الشخصي (GitHub Token - بصلاحية repo & workflow)</label>
+            <input id="ghToken" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" class="w-full rounded-xl bg-slate-950 border border-slate-800 px-3.5 py-2 text-xs text-white code-font focus:outline-none focus:border-emerald-500" />
+          </div>
+          <div>
+            <label for="ghBranch" class="block text-xs font-bold text-slate-300 mb-1">الفرع (Branch)</label>
+            <input id="ghBranch" type="text" value="main" class="w-full rounded-xl bg-slate-950 border border-slate-800 px-3.5 py-2 text-xs text-white code-font focus:outline-none focus:border-emerald-500" />
+          </div>
+        </div>
+
+        <button id="btnPushToGithub" type="button" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-extrabold text-xs shadow-lg transition flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          <span>رفع index.html + main.yml وبدء بناء الـ APK الآن</span>
+        </button>
+
+        <div id="ghPushLog" class="rounded-xl bg-slate-950 border border-slate-800 p-3.5 text-xs text-slate-300 space-y-1.5">
+          <div class="font-bold text-slate-400">سجل الاتصال السحابي:</div>
+          <div id="ghPushStatusText" class="text-slate-400">جاهز. يمكنك الرفع المباشر أو استخدام التحميل اليدوي من تبويب (التصدير وبناء APK).</div>
+        </div>
+      </div>
+
+      <!-- Right: Step-by-Step Guide & Error Troubleshooter -->
+      <div class="lg:col-span-6 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <h2 class="text-base font-bold text-white border-b border-slate-800 pb-3">دليل التحويل السريع وحل مشاكل بناء APK الشائعة</h2>
+
+        <div class="space-y-3 text-xs">
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+            <div class="font-bold text-emerald-400 mb-1">كيف تحصل على ملف APK خلال دقيقتين يدوياً بدون أخطاء؟</div>
+            <ol class="list-decimal list-inside space-y-1 text-slate-300 leading-relaxed">
+              <li>ارفع ملف الـ HTML الخاص بك في التبويب الأول واضبط اسم التطبيق والأيقونة.</li>
+              <li>من التبويب الرابع، اضغط <strong>تحميل ملف .github/workflows/main.yml</strong>.</li>
+              <li>في مستودعك على GitHub، ارفع ملفك باسم <span class="code-font text-emerald-300">index.html</span>، وأنشئ ملفاً باسم <span class="code-font text-emerald-300">.github/workflows/main.yml</span> والصق الكود فيه.</li>
+              <li>ادخل إلى قسم <strong>Actions</strong> في GitHub، وستجد ملف <strong>app-debug.apk</strong> جاهزاً للتحميل تحت قسم <strong>Artifacts</strong>!</li>
+            </ol>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+            <div class="font-bold text-sky-400 mb-1">لماذا لا يفشل هذا الكود بخطأ gradlew أو Java 21؟</div>
+            <p class="text-slate-300 leading-relaxed">
+              لأن الكود الذي يولّده هذا التطبيق لا يعتمد على Capacitor ولا يتطلب وجود ملف <span class="code-font text-rose-300">gradlew</span> مسبقاً، بل يستخدم أداة <span class="code-font text-emerald-300">gradle/actions/setup-gradle@v4</span> الرسمية مع <span class="code-font text-emerald-300">Java 17</span> لبناء مشروع Android WebView أصلي مباشرة من ملف <span class="code-font text-emerald-300">index.html</span>.
+            </p>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+            <div class="font-bold text-amber-400 mb-1">حل مشكلة عدم عمل روابط واتساب أو الطباعة داخل APK</div>
+            <p class="text-slate-300 leading-relaxed">
+              تم تضمين معالج روابط ذكي داخل <span class="code-font text-amber-300">MainActivity.java</span> يلتقط روابط <span class="code-font">https://wa.me</span> و <span class="code-font">whatsapp://</span> و <span class="code-font">tel:</span> ويفتحها بتطبيق الهاتف الرسمي بدلاً من إظهار شاشة خطأ، بالإضافة لربط دالة <span class="code-font">window.print()</span> مع طابعة PDF في أندرويد.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Application Logic -->
+  <script>
+    // Starter HTML Templates
+    const STARTER_TEMPLATES = {
+      grocery: `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مسواكي الذكي</title>
+  <script src="https://cdn.tailwindcss.com"><\/script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;800&display=swap" rel="stylesheet" />
+  <style>body { font-family: 'Cairo', sans-serif; }</style>
+</head>
+<body class="bg-emerald-950 text-white min-h-screen p-4">
+  <div class="max-w-md mx-auto bg-slate-900 rounded-2xl p-4 border border-emerald-500/30 shadow-xl">
+    <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+      <div>
+        <h1 class="text-lg font-extrabold text-emerald-400">🛒 مسواكي الذكي</h1>
+        <p class="text-xs text-slate-400">قائمة المشتريات ومشاركتها عبر واتساب</p>
+      </div>
+      <span id="countBadge" class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold">3 مواد</span>
+    </div>
+    <div class="flex gap-2 mb-3">
+      <input id="itemInput" type="text" placeholder="أضف مادة (مثال: طماطم 2 كغم)..." class="flex-1 rounded-xl bg-slate-950 border border-slate-800 px-3 py-2 text-xs text-white" />
+      <button onclick="addItem()" class="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs">إضافة</button>
+    </div>
+    <ul id="itemsList" class="space-y-2 text-xs"></ul>
+    <div class="mt-4 pt-3 border-t border-slate-800 flex gap-2">
+      <button onclick="shareWhatsapp()" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs">إرسال القائمة عبر واتساب</button>
+      <button onclick="window.print()" class="px-3 py-2.5 rounded-xl bg-slate-800 text-slate-200 font-bold text-xs">طباعة PDF</button>
+    </div>
+  </div>
+  <script>
+    let items = ['طماطم طازجة - 2 كغم', 'لحم غنم - 1 كغم', 'خبز عراقي - 10 أرغفة'];
+    try {
+      const saved = localStorage.getItem('miswaki_demo_items');
+      if (saved) items = JSON.parse(saved);
+    } catch (e) {}
+    function render() {
+      const ul = document.getElementById('itemsList');
+      document.getElementById('countBadge').textContent = items.length + ' مواد';
+      ul.innerHTML = items.map((it, idx) =>
+        '<li class="flex items-center justify-between bg-slate-950 px-3 py-2 rounded-xl border border-slate-800">' +
+        '<span>✅ ' + it + '</span>' +
+        '<button onclick="removeItem(' + idx + ')" class="text-rose-400 font-bold">حذف</button></li>'
+      ).join('');
+      try { localStorage.setItem('miswaki_demo_items', JSON.stringify(items)); } catch (e) {}
+    }
+    function addItem() {
+      const inp = document.getElementById('itemInput');
+      if (!inp.value.trim()) return;
+      items.push(inp.value.trim());
+      inp.value = '';
+      render();
+    }
+    function removeItem(i) {
+      items.splice(i, 1);
+      render();
+    }
+    function shareWhatsapp() {
+      const text = '🛒 قائمة مسواكي:\\n' + items.map((x, i) => (i + 1) + '. ' + x).join('\\n');
+      window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+    }
+    render();
+  <\/script>
+</body>
+</html>`,
+
+      shifts: `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>خفارتي - جدول المناوبات</title>
+  <script src="https://cdn.tailwindcss.com"><\/script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;800&display=swap" rel="stylesheet" />
+  <style>body { font-family: 'Cairo', sans-serif; }</style>
+</head>
+<body class="bg-slate-950 text-white min-h-screen p-4">
+  <div class="max-w-md mx-auto bg-slate-900 rounded-2xl p-4 border border-sky-500/30 shadow-xl">
+    <h1 class="text-lg font-extrabold text-sky-400 mb-1">📅 جدول خفارتي الرباعي</h1>
+    <p class="text-xs text-slate-400 mb-4">نظام عمل يوم واستراحة 3 أيام بالتناوب</p>
+    <div id="scheduleBox" class="space-y-2 text-xs"></div>
+  </div>
+  <script>
+    const staff = ['المناوب الأول', 'المناوب الثاني', 'المناوب الثالث', 'المناوب الرابع'];
+    const box = document.getElementById('scheduleBox');
+    const today = new Date();
+    let html = '';
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(today.getTime() + i * 86400000);
+      const person = staff[i % staff.length];
+      html += '<div class="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800">' +
+              '<span class="font-bold text-sky-300">' + d.toLocaleDateString('ar-IQ', { weekday: 'long', month: 'short', day: 'numeric' }) + '</span>' +
+              '<span class="px-2.5 py-1 rounded-lg bg-sky-500/20 text-white font-bold">' + person + '</span></div>';
+    }
+    box.innerHTML = html;
+  <\/script>
+</body>
+</html>`,
+
+      lab: `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>حاسبة المختبر الطبي</title>
+  <script src="https://cdn.tailwindcss.com"><\/script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;800&display=swap" rel="stylesheet" />
+  <style>body { font-family: 'Cairo', sans-serif; }</style>
+</head>
+<body class="bg-slate-950 text-white min-h-screen p-4">
+  <div class="max-w-md mx-auto bg-slate-900 rounded-2xl p-4 border border-purple-500/30 shadow-xl space-y-3">
+    <h1 class="text-lg font-extrabold text-purple-400">🔬 حاسبة التحليلات المرضية السريعة</h1>
+    <p class="text-xs text-slate-400">حساب الفاتورة وتصدير النتيجة</p>
+    <div id="testsContainer" class="space-y-2 text-xs"></div>
+    <div class="p-3 rounded-xl bg-purple-950/50 border border-purple-500/30 flex items-center justify-between">
+      <span class="text-xs font-bold">الإجمالي الكلي:</span>
+      <span id="totalPrice" class="text-sm font-extrabold text-purple-300">0 د.ع</span>
+    </div>
+  </div>
+  <script>
+    const tests = [
+      { name: 'CBC - صورة دم كاملة', price: 15000, checked: true },
+      { name: 'FBS - فحص السكر الصائم', price: 5000, checked: true },
+      { name: 'GUE - فحص الإدرار العام', price: 5000, checked: false },
+      { name: 'Vitamin D3 - فيتامين د', price: 25000, checked: false }
+    ];
+    function renderLab() {
+      const c = document.getElementById('testsContainer');
+      let sum = 0;
+      c.innerHTML = tests.map((t, i) => {
+        if (t.checked) sum += t.price;
+        return '<label class="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer">' +
+          '<span class="font-bold">' + t.name + '</span>' +
+          '<div class="flex items-center gap-2"><span class="text-purple-300">' + t.price.toLocaleString() + ' د.ع</span>' +
+          '<input type="checkbox" ' + (t.checked ? 'checked' : '') + ' onchange="toggleTest(' + i + ')" class="w-4 h-4 accent-purple-500" /></div></label>';
+      }).join('');
+      document.getElementById('totalPrice').textContent = sum.toLocaleString() + ' د.ع';
+    }
+    function toggleTest(i) {
+      tests[i].checked = !tests[i].checked;
+      renderLab();
+    }
+    renderLab();
+  <\/script>
+</body>
+</html>`
+    };
+
+    // Application State
+    const state = {
+      fileName: 'index.html',
+      htmlContent: STARTER_TEMPLATES.grocery,
+      appName: 'مسواكي الذكي',
+      packageName: 'com.alsahlany.miswaki',
+      versionName: '1.0.0',
+      versionCode: 1,
+      orientation: 'portrait',
+      statusBarColor: '#047857',
+      minSdk: 24,
+      targetSdk: 34,
+      permDomStorage: true,
+      permWhatsappIntents: true,
+      permPrintPdf: true,
+      permFileUpload: true,
+      permInternet: true,
+      permFullscreen: true,
+      iconText: 'مسواك',
+      iconSymbol: 'cart',
+      iconBgColor1: '#059669',
+      iconBgColor2: '#0f766e',
+      iconTextColor: '#ffffff',
+      iconCornerRadius: 110,
+      customIconImage: null,
+      isLandscapeSim: false,
+      currentCodePreviewTab: 'workflow'
+    };
+
+    // Toast helper
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      const colors = type === 'error'
+        ? 'bg-rose-950 border-rose-500/50 text-rose-200'
+        : 'bg-emerald-950 border-emerald-500/50 text-emerald-200';
+      el.className = `px-4 py-2.5 rounded-xl border shadow-2xl text-xs font-bold flex items-center gap-2 transition-all duration-300 ${colors}`;
+      el.textContent = message;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 300);
+      }, 3200);
+    }
+
+    // Copy to clipboard helper with fallback
+    function copyTextToClipboard(text, label) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast(`تم نسخ ${label} بنجاح!`);
+        }).catch(() => fallbackCopy(text, label));
+      } else {
+        fallbackCopy(text, label);
+      }
+    }
+
+    function fallbackCopy(text, label) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast(`تم نسخ ${label} بنجاح!`);
+      } catch (e) {
+        showToast('تعذر النسخ التلقائي، يرجى النسخ يدوياً.', 'error');
+      }
+      ta.remove();
+    }
+
+    // Download Blob helper
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+        a.remove();
+      }, 200);
+    }
+
+    // Analyze HTML Content & Render Badges
+    function analyzeHtmlAndUpdateUI() {
+      const code = state.htmlContent || '';
+      const charCountEl = document.getElementById('codeCharCount');
+      const sizeKb = (new Blob([code]).size / 1024).toFixed(1);
+      charCountEl.textContent = `${code.length.toLocaleString()} حرف (${sizeKb} KB)`;
+      document.getElementById('headerFileName').textContent = state.fileName;
+      document.getElementById('headerFileSize').textContent = `(${sizeKb} KB)`;
+
+      const checks = [
+        { label: 'LocalStorage', active: /localStorage/i.test(code) },
+        { label: 'دعم العربية RTL', active: /dir=["']rtl["']|lang=["']ar["']/i.test(code) },
+        { label: 'Tailwind CSS', active: /tailwindcss/i.test(code) },
+        { label: 'روابط واتساب', active: /wa\.me|whatsapp:\/\//i.test(code) },
+        { label: 'طباعة / PDF', active: /window\.print/i.test(code) },
+        { label: 'رفع ملفات', active: /type=["']file["']/i.test(code) }
+      ];
+
+      const badgeContainer = document.getElementById('analysisBadges');
+      badgeContainer.innerHTML = checks.map(c => {
+        if (c.active) {
+          return `<span class="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold">✓ ${c.label}</span>`;
+        }
+        return `<span class="px-2.5 py-1 rounded-lg bg-slate-800/70 text-slate-400 border border-slate-700/60 text-[11px]">• ${c.label}</span>`;
+      }).join('');
+    }
+
+    // Update Simulator
+    function updateSimulator() {
+      const iframe = document.getElementById('previewIframe');
+      iframe.srcdoc = state.htmlContent;
+      document.getElementById('simAppNameTop').textContent = state.appName || 'تطبيقي';
+      document.getElementById('simPkgLabel').textContent = state.packageName || 'com.alsahlany.app';
+      document.getElementById('simStatusBar').style.backgroundColor = state.statusBarColor || '#047857';
+    }
+
+    // Validate Android Package Name
+    function validatePackageName(pkg) {
+      const clean = pkg.trim();
+      const valid = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/.test(clean);
+      const msgEl = document.getElementById('pkgValidationMsg');
+      if (valid) {
+        msgEl.textContent = '✓ صيغة معرف الحزمة صحيحة ومطابقة لمعايير أندرويد.';
+        msgEl.className = 'text-[11px] text-emerald-400 mt-1';
+      } else {
+        msgEl.textContent = '⚠ يجب أن يتكون من مقطعين على الأقل بحروف إنجليزية صغيرة مثل: com.alsahlany.app';
+        msgEl.className = 'text-[11px] text-amber-400 mt-1';
+      }
+      return valid ? clean : 'com.alsahlany.app';
+    }
+
+    // Draw App Icon on Canvas
+    function renderIconCanvas() {
+      const canvas = document.getElementById('iconCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      const r = Number(state.iconCornerRadius) || 110;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Rounded rect clipping path
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(r, 0);
+      ctx.lineTo(w - r, 0);
+      ctx.quadraticCurveTo(w, 0, w, r);
+      ctx.lineTo(w, h - r);
+      ctx.quadraticCurveTo(w, h, w - r, h);
+      ctx.lineTo(r, h);
+      ctx.quadraticCurveTo(0, h, 0, h - r);
+      ctx.lineTo(0, r);
+      ctx.quadraticCurveTo(0, 0, r, 0);
+      ctx.closePath();
+      ctx.clip();
+
+      if (state.customIconImage) {
+        ctx.drawImage(state.customIconImage, 0, 0, w, h);
+      } else {
+        // Gradient background
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, state.iconBgColor1);
+        grad.addColorStop(1, state.iconBgColor2);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        // Decorative subtle circle glow
+        ctx.fillStyle = 'rgba(255,255,255,0.08)';
+        ctx.beginPath();
+        ctx.arc(w * 0.8, h * 0.2, 180, 0, Math.PI * 2);
+        ctx.fill();
+
+        const symbolMap = {
+          cart: '🛒',
+          calendar: '📅',
+          lab: '🔬',
+          vault: '🔐',
+          code: '⚡',
+          none: ''
+        };
+        const emoji = symbolMap[state.iconSymbol] || '';
+
+        ctx.fillStyle = state.iconTextColor;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        if (emoji && state.iconText) {
+          ctx.font = '135px sans-serif';
+          ctx.fillText(emoji, w / 2, h * 0.37);
+          ctx.font = 'bold 78px Cairo, sans-serif';
+          ctx.fillText(state.iconText, w / 2, h * 0.72);
+        } else if (emoji) {
+          ctx.font = '200px sans-serif';
+          ctx.fillText(emoji, w / 2, h / 2);
+        } else {
+          ctx.font = 'bold 110px Cairo, sans-serif';
+          ctx.fillText(state.iconText || 'APK', w / 2, h / 2);
+        }
+      }
+      ctx.restore();
+    }
+
+    // Generate Enhanced HTML with Android WebView Helpers
+    function getEnhancedHtmlContent() {
+      let html = state.htmlContent || '';
+      const bridgeMarker = '<!-- APK-STUDIO-WEBVIEW-BRIDGE -->';
+      if (html.includes(bridgeMarker)) return html;
+
+      const bridgeScript = `
+${bridgeMarker}
+<script>
+  (function() {
+    // Ensure external WhatsApp & tel links open cleanly in Android WebView
+    document.addEventListener('click', function(e) {
+      var a = e.target.closest ? e.target.closest('a') : null;
+      if (!a || !a.href) return;
+      if (/^(https?:\\/\\/(wa\\.me|api\\.whatsapp\\.com)|whatsapp:\\/\\/|tel:|mailto:)/i.test(a.href)) {
+        a.target = '_blank';
+      }
+    }, true);
+  })();
+<\/script>`;
+
+      if (html.includes('</body>')) {
+        return html.replace('</body>', bridgeScript + '\n</body>');
+      }
+      return html + '\n' + bridgeScript;
+    }
+
+    // Code Generators for Android Project & GitHub Actions
+    function generateAndroidManifestXml() {
+      const pkg = validatePackageName(state.packageName);
+      const perms = [];
+      if (state.permInternet) {
+        perms.push('    <uses-permission android:name="android.permission.INTERNET" />');
+        perms.push('    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />');
+      }
+      const theme = state.permFullscreen
+        ? '@android:style/Theme.DeviceDefault.NoActionBar'
+        : '@android:style/Theme.DeviceDefault.Light.NoActionBar';
+
+      return `<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="${pkg}">
+
+${perms.join('\n')}
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="${escapeXml(state.appName)}"
+        android:usesCleartextTraffic="true"
+        android:supportsRtl="true"
+        android:theme="${theme}">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:screenOrientation="${state.orientation}"
+            android:configChanges="orientation|screenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>`;
+    }
+
+    function escapeXml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+    }
+
+    function generateMainActivityJava() {
+      const pkg = validatePackageName(state.packageName);
+      return `package ${pkg};
+
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.graphics.Color;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.print.PrintAttributes;
+import android.print.PrintDocumentAdapter;
+import android.print.PrintManager;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+
+public class MainActivity extends Activity {
+    private WebView webView;
+    private ValueCallback<Uri[]> filePathCallback;
+    private static final int FILE_CHOOSER_RESULT_CODE = 1001;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        Window window = getWindow();
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        window.setStatusBarColor(Color.parseColor("${state.statusBarColor || '#047857'}"));
+
+        webView = new WebView(this);
+        setContentView(webView);
+
+        WebSettings settings = webView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(${state.permDomStorage});
+        settings.setDatabaseEnabled(${state.permDomStorage});
+        settings.setAllowFileAccess(true);
+        settings.setAllowContentAccess(true);
+        settings.setLoadWithOverviewMode(true);
+        settings.setUseWideViewPort(true);
+        settings.setSupportMultipleWindows(false);
+        settings.setDefaultTextEncodingName("utf-8");
+
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                Uri uri = request.getUrl();
+                return handleUri(view, uri);
+            }
+
+            @SuppressWarnings("deprecation")
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                return handleUri(view, Uri.parse(url));
+            }
+
+            private boolean handleUri(WebView view, Uri uri) {
+                String scheme = uri.getScheme();
+                String host = uri.getHost() != null ? uri.getHost().toLowerCase() : "";
+                if ("file".equals(scheme)) {
+                    return false;
+                }
+                if (${state.permWhatsappIntents} && ("whatsapp".equals(scheme) || "tel".equals(scheme) || "mailto".equals(scheme) || "intent".equals(scheme) || host.contains("wa.me") || host.contains("whatsapp.com"))) {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                        startActivity(intent);
+                    } catch (Exception ignored) {}
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+                if (!${state.permFileUpload}) return false;
+                if (MainActivity.this.filePathCallback != null) {
+                    MainActivity.this.filePathCallback.onReceiveValue(null);
+                }
+                MainActivity.this.filePathCallback = filePathCallback;
+                try {
+                    Intent intent = fileChooserParams.createIntent();
+                    startActivityForResult(intent, FILE_CHOOSER_RESULT_CODE);
+                } catch (Exception e) {
+                    MainActivity.this.filePathCallback = null;
+                    return false;
+                }
+                return true;
+            }
+        });
+
+        webView.loadUrl("file:///android_asset/index.html");
+    }
+
+    public void printCurrentPage() {
+        if (!${state.permPrintPdf}) return;
+        PrintManager printManager = (PrintManager) getSystemService(Context.PRINT_SERVICE);
+        if (printManager != null && webView != null) {
+            PrintDocumentAdapter adapter = webView.createPrintDocumentAdapter("${escapeXml(state.appName)}");
+            printManager.print("${escapeXml(state.appName)}", adapter, new PrintAttributes.Builder().build());
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == FILE_CHOOSER_RESULT_CODE) {
+            if (filePathCallback == null) return;
+            Uri[] results = WebChromeClient.FileChooserParams.parseResult(resultCode, data);
+            filePathCallback.onReceiveValue(results);
+            filePathCallback = null;
+        } else {
+            super.onActivityResult(requestCode, resultCode, data);
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (webView != null && webView.canGoBack()) {
+            webView.goBack();
+        } else {
+            super.onBackPressed();
+        }
+    }
+}`;
+    }
+
+    function generateAppBuildGradle() {
+      const pkg = validatePackageName(state.packageName);
+      return `plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace '${pkg}'
+    compileSdk ${state.targetSdk}
+
+    defaultConfig {
+        applicationId "${pkg}"
+        minSdk ${state.minSdk}
+        targetSdk ${state.targetSdk}
+        versionCode ${Number(state.versionCode) || 1}
+        versionName "${state.versionName || '1.0.0'}"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+        debug {
+            debuggable true
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+}`;
+    }
+
+    function generateSmartGithubWorkflowYaml() {
+      const pkg = validatePackageName(state.packageName);
+      const pkgPath = pkg.replace(/\./g, '/');
+      const manifestContent = generateAndroidManifestXml();
+      const javaContent = generateMainActivityJava();
+      const appGradleContent = generateAppBuildGradle();
+
+      return `name: Build HTML to Android APK
+
+on:
+  push:
+    branches: [ "*" ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 2. Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 3. Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 4. Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: 5. Auto-Generate Native Android WebView Project from index.html
+        run: |
+          mkdir -p android-app/app/src/main/assets
+          mkdir -p android-app/app/src/main/java/${pkgPath}
+          mkdir -p android-app/app/src/main/res/mipmap-xxxhdpi
+
+          if [ -f "index.html" ]; then
+            cp index.html android-app/app/src/main/assets/index.html
+          elif [ -f "app/src/main/assets/index.html" ]; then
+            cp app/src/main/assets/index.html android-app/app/src/main/assets/index.html
+          else
+            echo "<h1>App Ready</h1>" > android-app/app/src/main/assets/index.html
+          fi
+
+          # Generate a valid PNG launcher icon via Python
+          python3 - << 'PY'
+          import struct, zlib
+          def make_png(width, height, rgb):
+              raw = b"".join(b"\\x00" + bytes(rgb) * width for _ in range(height))
+              def chunk(tag, data):
+                  return struct.pack("!I", len(data)) + tag + data + struct.pack("!I", zlib.crc32(tag + data) & 0xffffffff)
+              return b"\\x89PNG\\r\\n\\x1a\\n" + chunk(b"IHDR", struct.pack("!IIBBBBB", width, height, 8, 2, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b"")
+          open("android-app/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png", "wb").write(make_png(192, 192, (5, 150, 105)))
+          PY
+
+          cat << 'EOF' > android-app/settings.gradle
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "HtmlToApkApp"
+          include ':app'
+          EOF
+
+          cat << 'EOF' > android-app/build.gradle
+          plugins {
+              id 'com.android.application' version '8.3.0' apply false
+          }
+          EOF
+
+          cat << 'EOF' > android-app/gradle.properties
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          android.useAndroidX=false
+          EOF
+
+          cat << 'EOF' > android-app/app/build.gradle
+${indentBlock(appGradleContent, 10)}
+          EOF
+
+          cat << 'EOF' > android-app/app/src/main/AndroidManifest.xml
+${indentBlock(manifestContent, 10)}
+          EOF
+
+          cat << 'EOF' > android-app/app/src/main/java/${pkgPath}/MainActivity.java
+${indentBlock(javaContent, 10)}
+          EOF
+
+      - name: 6. Compile Android APK with Gradle
+        working-directory: android-app
+        run: gradle assembleDebug
+
+      - name: 7. Upload Ready APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${pkg.split('.').pop() || 'app'}-apk
+          path: android-app/app/build/outputs/apk/debug/app-debug.apk`;
+    }
+
+    function indentBlock(text, spaces) {
+      const pad = ' '.repeat(spaces);
+      return text.split('\n').map(line => pad + line).join('\n');
+    }
+
+    // Update Live Code Preview Box
+    function updateCodePreviewBox() {
+      const viewer = document.getElementById('generatedCodeViewer');
+      if (!viewer) return;
+      if (state.currentCodePreviewTab === 'workflow') {
+        viewer.textContent = generateSmartGithubWorkflowYaml();
+      } else if (state.currentCodePreviewTab === 'manifest') {
+        viewer.textContent = generateAndroidManifestXml();
+      } else if (state.currentCodePreviewTab === 'java') {
+        viewer.textContent = generateMainActivityJava();
+      } else {
+        viewer.textContent = generateAppBuildGradle();
+      }
+    }
+
+    // Get Canvas PNG Blob as Promise
+    function getCanvasIconBlob() {
+      return new Promise(resolve => {
+        const canvas = document.getElementById('iconCanvas');
+        canvas.toBlob(blob => resolve(blob), 'image/png');
+      });
+    }
+
+    // Export Complete Android Project ZIP via JSZip
+    async function exportFullAndroidZip() {
+      if (typeof JSZip === 'undefined') {
+        showToast('مكتبة ضغط الملفات قيد التحميل، يرجى المحاولة بعد لحظة.', 'error');
+        return;
+      }
+      showToast('جاري تجهيز وضغط مشروع الأندرويد الكامل...');
+      const zip = new JSZip();
+      const pkg = validatePackageName(state.packageName);
+      const pkgPath = pkg.replace(/\./g, '/');
+
+      zip.file('index.html', getEnhancedHtmlContent());
+      zip.file('app/src/main/assets/index.html', getEnhancedHtmlContent());
+      zip.file('app/src/main/AndroidManifest.xml', generateAndroidManifestXml());
+      zip.file(`app/src/main/java/${pkgPath}/MainActivity.java`, generateMainActivityJava());
+      zip.file('app/build.gradle', generateAppBuildGradle());
+      zip.file('build.gradle', `plugins {\n    id 'com.android.application' version '8.3.0' apply false\n}\n`);
+      zip.file('settings.gradle', `pluginManagement {\n    repositories {\n        google()\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\ndependencyResolutionManagement {\n    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\nrootProject.name = "HtmlToApkApp"\ninclude ':app'\n`);
+      zip.file('gradle.properties', `org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8\nandroid.useAndroidX=false\n`);
+      zip.file('.github/workflows/main.yml', generateSmartGithubWorkflowYaml());
+
+      const iconBlob = await getCanvasIconBlob();
+      if (iconBlob) {
+        zip.file('app/src/main/res/mipmap-xxxhdpi/ic_launcher.png', iconBlob);
+      }
+
+      const readme = `# مشروع أندرويد: ${state.appName}
+معرف الحزمة: ${pkg}
+الإصدار: ${state.versionName}
+
+## طريقة بناء ملف الـ APK مجاناً عبر GitHub Actions:
+1. أنشئ مستودعاً جديداً في GitHub.
+2. ارفع ملف \`index.html\` وملف \`.github/workflows/main.yml\` الموجودين داخل هذه الحزمة.
+3. افتح تبويب Actions في مستودعك، وبعد اكتمال البناء (حوالي دقيقتين) حمّل ملف \`app-debug.apk\` من قسم Artifacts.
+`;
+      zip.file('README-AR.md', readme);
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      const safeName = pkg.split('.').pop() || 'android-app';
+      downloadBlob(content, `${safeName}-android-apk-project.zip`);
+      showToast('تم تحميل حزمة مشروع الأندرويد (.ZIP) بنجاح!');
+    }
+
+    // Export Installable PWA Package ZIP
+    async function exportPwaZip() {
+      if (typeof JSZip === 'undefined') {
+        showToast('مكتبة ضغط الملفات غير متوفرة حالياً.', 'error');
+        return;
+      }
+      const zip = new JSZip();
+      const manifest = {
+        name: state.appName,
+        short_name: state.appName,
+        start_url: './index.html',
+        display: 'standalone',
+        dir: 'rtl',
+        lang: 'ar',
+        background_color: state.iconBgColor1,
+        theme_color: state.statusBarColor,
+        icons: [
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+        ]
+      };
+
+      const swCode = `const CACHE_NAME = 'apk-studio-pwa-v1';
+const ASSETS = ['./', './index.html', './manifest.json', './icon-512.png'];
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
+});
+self.addEventListener('fetch', e => {
+  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+});`;
+
+      let html = getEnhancedHtmlContent();
+      const pwaHead = `\n  <link rel="manifest" href="manifest.json" />\n  <meta name="theme-color" content="${state.statusBarColor}" />\n  <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));}<\/script>\n`;
+      if (html.includes('</head>')) {
+        html = html.replace('</head>', pwaHead + '</head>');
+      } else {
+        html = pwaHead + html;
+      }
+
+      zip.file('index.html', html);
+      zip.file('manifest.json', JSON.stringify(manifest, null, 2));
+      zip.file('sw.js', swCode);
+
+      const iconBlob = await getCanvasIconBlob();
+      if (iconBlob) {
+        zip.file('icon-512.png', iconBlob);
+      }
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      const safeName = validatePackageName(state.packageName).split('.').pop() || 'webapp';
+      downloadBlob(content, `${safeName}-pwa-installable.zip`);
+      showToast('تم تحميل حزمة PWA القابلة للتثبيت الفوري!');
+    }
+
+    // Push directly to GitHub Repository via REST API
+    async function pushFilesToGithub() {
+      const owner = document.getElementById('ghOwner').value.trim();
+      const repo = document.getElementById('ghRepo').value.trim();
+      const token = document.getElementById('ghToken').value.trim();
+      const branch = document.getElementById('ghBranch').value.trim() || 'main';
+      const statusEl = document.getElementById('ghPushStatusText');
+
+      if (!owner || !repo || !token) {
+        statusEl.textContent = '⚠ يرجى إدخال اسم المستخدم واسم المستودع ورمز الوصول (Token) أولاً.';
+        statusEl.className = 'text-amber-400 font-bold';
+        showToast('يرجى تعبئة بيانات حساب GitHub أولاً', 'error');
+        return;
+      }
+
+      statusEl.textContent = '⏳ جاري الاتصال بـ GitHub ورفع ملف index.html وملف البناء main.yml...';
+      statusEl.className = 'text-sky-400 font-bold';
+
+      async function putGithubFile(path, textContent, commitMessage) {
+        const headers = {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/vnd.github+json',
+          'Content-Type': 'application/json'
+        };
+
+        let sha = null;
+        try {
+          const checkRes = await fetch(`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${path}?ref=${encodeURIComponent(branch)}`, { headers });
+          if (checkRes.ok) {
+            const existing = await checkRes.json();
+            sha = existing.sha;
+          }
+        } catch (err) {}
+
+        const base64Content = btoa(unescape(encodeURIComponent(textContent)));
+        const body = {
+          message: commitMessage,
+          content: base64Content,
+          branch: branch
+        };
+        if (sha) body.sha = sha;
+
+        const putRes = await fetch(`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${path}`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify(body)
+        });
+
+        if (!putRes.ok) {
+          const errData = await putRes.json().catch(() => ({}));
+          throw new Error(errData.message || `HTTP ${putRes.status}`);
+        }
+      }
+
+      try {
+        await putGithubFile('index.html', getEnhancedHtmlContent(), 'Upload index.html via APK Studio Pro');
+        await putGithubFile('.github/workflows/main.yml', generateSmartGithubWorkflowYaml(), 'Add automated Android APK build workflow');
+        statusEl.innerHTML = `✅ تم رفع الملفات بنجاح! انتقل الآن إلى قسم <strong>Actions</strong> في مستودعك <span class="code-font">${owner}/${repo}</span> لتحميل ملف الـ APK بعد اكتمال البناء.`;
+        statusEl.className = 'text-emerald-400 font-bold';
+        showToast('تم الرفع إلى GitHub وبدء بناء الـ APK بنجاح!');
+      } catch (error) {
+        statusEl.textContent = `❌ تعذر الرفع المباشر (${error.message}). تأكد من صحة اسم المستودع وصلاحية workflow في الـ Token، أو استخدم زر التحميل اليدوي من التبويب الرابع.`;
+        statusEl.className = 'text-rose-400 font-bold';
+        showToast('تعذر الرفع المباشر إلى GitHub', 'error');
+      }
+    }
+
+    // Save & Load State from LocalStorage
+    function saveStateToStorage() {
+      try {
+        const toSave = { ...state, customIconImage: null };
+        localStorage.setItem('apk_studio_pro_state_v3', JSON.stringify(toSave));
+        showToast('تم حفظ جميع إعدادات مشروعك محلياً!');
+      } catch (e) {
+        showToast('تم تحديث الإعدادات في الذاكرة الحالية.');
+      }
+    }
+
+    function loadStateFromStorage() {
+      try {
+        const raw = localStorage.getItem('apk_studio_pro_state_v3');
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        Object.assign(state, parsed, { customIconImage: null });
+      } catch (e) {}
+    }
+
+    // Sync Inputs with State
+    function syncUIFromState() {
+      document.getElementById('htmlCodeEditor').value = state.htmlContent;
+      document.getElementById('cfgAppName').value = state.appName;
+      document.getElementById('cfgPackageName').value = state.packageName;
+      document.getElementById('cfgVersionName').value = state.versionName;
+      document.getElementById('cfgVersionCode').value = state.versionCode;
+      document.getElementById('cfgOrientation').value = state.orientation;
+      document.getElementById('cfgStatusBarColor').value = state.statusBarColor;
+      document.getElementById('cfgStatusBarHex').value = state.statusBarColor;
+      document.getElementById('cfgMinSdk').value = String(state.minSdk);
+      document.getElementById('cfgTargetSdk').value = String(state.targetSdk);
+
+      document.getElementById('permDomStorage').checked = state.permDomStorage;
+      document.getElementById('permWhatsappIntents').checked = state.permWhatsappIntents;
+      document.getElementById('permPrintPdf').checked = state.permPrintPdf;
+      document.getElementById('permFileUpload').checked = state.permFileUpload;
+      document.getElementById('permInternet').checked = state.permInternet;
+      document.getElementById('permFullscreen').checked = state.permFullscreen;
+
+      document.getElementById('iconText').value = state.iconText;
+      document.getElementById('iconSymbol').value = state.iconSymbol;
+      document.getElementById('iconBgColor1').value = state.iconBgColor1;
+      document.getElementById('iconBgColor2').value = state.iconBgColor2;
+      document.getElementById('iconTextColor').value = state.iconTextColor;
+      document.getElementById('iconCornerRadius').value = state.iconCornerRadius;
+      document.getElementById('radiusValueLabel').textContent = state.iconCornerRadius;
+
+      validatePackageName(state.packageName);
+      analyzeHtmlAndUpdateUI();
+      updateSimulator();
+      renderIconCanvas();
+      updateCodePreviewBox();
+    }
+
+    // Switch Main Navigation Tabs
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+      const target = document.getElementById(tabId);
+      if (target) target.classList.remove('hidden');
+
+      document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+        if (btn.getAttribute('data-tab') === tabId) {
+          btn.className = 'nav-tab-btn px-4 py-2.5 text-xs md:text-sm font-bold border-b-2 border-emerald-400 text-emerald-400 whitespace-nowrap flex items-center gap-2 transition';
+        } else {
+          btn.className = 'nav-tab-btn px-4 py-2.5 text-xs md:text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 whitespace-nowrap flex items-center gap-2 transition';
+        }
+      });
+
+      if (tabId === 'tab-icon') renderIconCanvas();
+      if (tabId === 'tab-build') updateCodePreviewBox();
+    }
+
+    // Handle Uploaded HTML File
+    function handleUploadedHtmlFile(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        state.fileName = file.name || 'index.html';
+        state.htmlContent = String(e.target.result || '');
+        document.getElementById('htmlCodeEditor').value = state.htmlContent;
+
+        // Try extracting <title> for App Name
+        const titleMatch = state.htmlContent.match(/<title[^>]*>([^<]+)<\/title>/i);
+        if (titleMatch && titleMatch[1].trim()) {
+          state.appName = titleMatch[1].trim().slice(0, 30);
+          document.getElementById('cfgAppName').value = state.appName;
+        }
+        analyzeHtmlAndUpdateUI();
+        updateSimulator();
+        updateCodePreviewBox();
+        showToast(`تم استيراد الملف ${state.fileName} بنجاح!`);
+      };
+      reader.readAsText(file);
+    }
+
+    // Initialize Event Listeners
+    window.addEventListener('DOMContentLoaded', () => {
+      loadStateFromStorage();
+      syncUIFromState();
+
+      // Nav tabs
+      document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
+      });
+
+      document.getElementById('btnQuickExportTrigger').addEventListener('click', () => switchTab('tab-build'));
+      document.getElementById('btnGoToConfig').addEventListener('click', () => switchTab('tab-config'));
+      document.getElementById('btnSaveSettings').addEventListener('click', saveStateToStorage);
+
+      // HTML File Upload & Drag-and-Drop
+      const fileInput = document.getElementById('htmlFileInput');
+      fileInput.addEventListener('change', e => {
+        if (e.target.files && e.target.files[0]) {
+          handleUploadedHtmlFile(e.target.files[0]);
+        }
+      });
+
+      const dropZone = document.getElementById('dropZone');
+      dropZone.addEventListener('dragover', e => {
+        e.preventDefault();
+        dropZone.classList.add('border-emerald-400');
+      });
+      dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('border-emerald-400');
+      });
+      dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('border-emerald-400');
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          handleUploadedHtmlFile(e.dataTransfer.files[0]);
+        }
+      });
+
+      // Starter Templates
+      document.querySelectorAll('.template-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const key = btn.getAttribute('data-template');
+          if (STARTER_TEMPLATES[key]) {
+            state.htmlContent = STARTER_TEMPLATES[key];
+            state.fileName = `${key}-app.html`;
+            if (key === 'grocery') {
+              state.appName = 'مسواكي الذكي';
+              state.packageName = 'com.alsahlany.miswaki';
+              state.iconSymbol = 'cart';
+              state.iconText = 'مسواك';
+            } else if (key === 'shifts') {
+              state.appName = 'خفارتي للمناوبات';
+              state.packageName = 'com.alsahlany.khafarti';
+              state.iconSymbol = 'calendar';
+              state.iconText = 'خفارتي';
+            } else if (key === 'lab') {
+              state.appName = 'مختبر التحليلات';
+              state.packageName = 'com.alsahlany.labcalc';
+              state.iconSymbol = 'lab';
+              state.iconText = 'المختبر';
+            }
+            syncUIFromState();
+            showToast(`تم تحميل قالب (${state.appName}) في المحاكي!`);
+          }
+        });
+      });
+
+      // Code Editor
+      const editor = document.getElementById('htmlCodeEditor');
+      editor.addEventListener('input', () => {
+        state.htmlContent = editor.value;
+        analyzeHtmlAndUpdateUI();
+      });
+
+      document.getElementById('btnRunPreview').addEventListener('click', () => {
+        state.htmlContent = editor.value;
+        updateSimulator();
+        updateCodePreviewBox();
+        showToast('تم تحديث معاينة المحاكي!');
+      });
+
+      document.getElementById('btnInjectBridge').addEventListener('click', () => {
+        state.htmlContent = getEnhancedHtmlContent();
+        editor.value = state.htmlContent;
+        analyzeHtmlAndUpdateUI();
+        updateSimulator();
+        showToast('تم حقن كود توافق Android WebView وروابط واتساب!');
+      });
+
+      // Simulator Controls
+      document.getElementById('btnRotatePhone').addEventListener('click', () => {
+        state.isLandscapeSim = !state.isLandscapeSim;
+        const frame = document.getElementById('phoneFrameContainer');
+        if (state.isLandscapeSim) {
+          frame.className = 'phone-frame w-full max-w-[600px] h-[360px] rounded-[32px] bg-slate-950 p-3 flex flex-col border-4 border-slate-800 relative';
+        } else {
+          frame.className = 'phone-frame w-full max-w-[350px] h-[640px] rounded-[36px] bg-slate-950 p-3 flex flex-col border-4 border-slate-800 relative';
+        }
+      });
+
+      document.getElementById('btnReloadIframe').addEventListener('click', () => {
+        updateSimulator();
+        showToast('تمت إعادة تشغيل التطبيق داخل المحاكي');
+      });
+
+      document.getElementById('simBackBtn').addEventListener('click', () => {
+        updateSimulator();
+      });
+      document.getElementById('simHomeBtn').addEventListener('click', () => {
+        showToast('العودة للشاشة الرئيسية (محاكاة أندرويد)');
+      });
+      document.getElementById('simRecentsBtn').addEventListener('click', () => {
+        showToast(`التطبيق النشط: ${state.appName}`);
+      });
+
+      // Config Inputs
+      document.getElementById('cfgAppName').addEventListener('input', e => {
+        state.appName = e.target.value;
+        updateSimulator();
+        updateCodePreviewBox();
+      });
+      document.getElementById('cfgPackageName').addEventListener('input', e => {
+        state.packageName = e.target.value;
+        validatePackageName(state.packageName);
+        updateSimulator();
+        updateCodePreviewBox();
+      });
+      document.getElementById('cfgVersionName').addEventListener('input', e => {
+        state.versionName = e.target.value;
+        updateCodePreviewBox();
+      });
+      document.getElementById('cfgVersionCode').addEventListener('input', e => {
+        state.versionCode = Number(e.target.value) || 1;
+        updateCodePreviewBox();
+      });
+      document.getElementById('cfgOrientation').addEventListener('change', e => {
+        state.orientation = e.target.value;
+        updateCodePreviewBox();
+      });
+      document.getElementById('cfgStatusBarColor').addEventListener('input', e => {
+        state.statusBarColor = e.target.value;
+        document.getElementById('cfgStatusBarHex').value = e.target.value;
+        updateSimulator();
+        updateCodePreviewBox();
+      });
+      document.getElementById('cfgStatusBarHex').addEventListener('input', e => {
+        if (/^#[0-9a-fA-F]{6}$/.test(e.target.value.trim())) {
+          state.statusBarColor = e.target.value.trim();
+          document.getElementById('cfgStatusBarColor').value = state.statusBarColor;
+          updateSimulator();
+          updateCodePreviewBox();
+        }
+      });
+      document.getElementById('cfgMinSdk').addEventListener('change', e => {
+        state.minSdk = Number(e.target.value);
+        updateCodePreviewBox();
+      });
+      document.getElementById('cfgTargetSdk').addEventListener('change', e => {
+        state.targetSdk = Number(e.target.value);
+        updateCodePreviewBox();
+      });
+
+      // Permissions Checkboxes
+      const permBindings = [
+        ['permDomStorage', 'permDomStorage'],
+        ['permWhatsappIntents', 'permWhatsappIntents'],
+        ['permPrintPdf', 'permPrintPdf'],
+        ['permFileUpload', 'permFileUpload'],
+        ['permInternet', 'permInternet'],
+        ['permFullscreen', 'permFullscreen']
+      ];
+      permBindings.forEach(([id, key]) => {
+        document.getElementById(id).addEventListener('change', e => {
+          state[key] = e.target.checked;
+          updateCodePreviewBox();
+        });
+      });
+
+      // Icon Studio Controls
+      ['iconText', 'iconSymbol', 'iconBgColor1', 'iconBgColor2', 'iconTextColor'].forEach(id => {
+        document.getElementById(id).addEventListener('input', e => {
+          state.customIconImage = null;
+          state[id] = e.target.value;
+          renderIconCanvas();
+        });
+      });
+      document.getElementById('iconCornerRadius').addEventListener('input', e => {
+        state.iconCornerRadius = Number(e.target.value);
+        document.getElementById('radiusValueLabel').textContent = state.iconCornerRadius;
+        renderIconCanvas();
+      });
+
+      document.getElementById('iconFileUpload').addEventListener('change', e => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          const img = new Image();
+          img.onload = () => {
+            state.customIconImage = img;
+            renderIconCanvas();
+            showToast('تم تطبيق صورة الأيقونة المرفوعة بنجاح!');
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+
+      document.getElementById('btnResetGeneratedIcon').addEventListener('click', () => {
+        state.customIconImage = null;
+        renderIconCanvas();
+        showToast('تمت استعادة تصميم الأيقونة التلقائي');
+      });
+
+      document.getElementById('btnDownloadIconPng').addEventListener('click', async () => {
+        const blob = await getCanvasIconBlob();
+        if (blob) {
+          downloadBlob(blob, 'ic_launcher.png');
+          showToast('تم تحميل الأيقونة ic_launcher.png');
+        }
+      });
+
+      // Build & Export Buttons
+      document.getElementById('btnDownloadFullAndroidZip').addEventListener('click', exportFullAndroidZip);
+      document.getElementById('btnDownloadAndroidZipCard').addEventListener('click', exportFullAndroidZip);
+      document.getElementById('btnDownloadPwaZip').addEventListener('click', exportPwaZip);
+
+      document.getElementById('btnDownloadSmartWorkflow').addEventListener('click', () => {
+        const yaml = generateSmartGithubWorkflowYaml();
+        const blob = new Blob([yaml], { type: 'text/yaml;charset=utf-8' });
+        downloadBlob(blob, 'main.yml');
+        showToast('تم تحميل ملف البناء التلقائي main.yml!');
+      });
+
+      document.getElementById('btnCopySmartWorkflow').addEventListener('click', () => {
+        copyTextToClipboard(generateSmartGithubWorkflowYaml(), 'كود GitHub Actions Workflow');
+      });
+
+      document.getElementById('btnDownloadEnhancedHtml').addEventListener('click', () => {
+        const html = getEnhancedHtmlContent();
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        downloadBlob(blob, 'index.html');
+        showToast('تم تحميل ملف index.html المحسّن للأندرويد!');
+      });
+
+      document.getElementById('btnPreviewGeneratedCode').addEventListener('click', () => {
+        document.getElementById('generatedCodeSection').scrollIntoView({ behavior: 'smooth' });
+      });
+
+      // Code Preview Tabs
+      document.querySelectorAll('.code-preview-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.currentCodePreviewTab = btn.getAttribute('data-preview-file');
+          document.querySelectorAll('.code-preview-tab').forEach(b => {
+            if (b === btn) {
+              b.className = 'code-preview-tab px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs transition';
+            } else {
+              b.className = 'code-preview-tab px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 font-semibold text-xs hover:bg-slate-700 transition';
+            }
+          });
+          updateCodePreviewBox();
+        });
+      });
+
+      document.getElementById('btnCopyCurrentPreview').addEventListener('click', () => {
+        const text = document.getElementById('generatedCodeViewer').textContent;
+        copyTextToClipboard(text, 'الكود المعروض');
+      });
+
+      // GitHub Direct Push
+      document.getElementById('btnPushToGithub').addEventListener('click', pushFilesToGithub);
+    });
+  </script>
+</body>
+</html>
